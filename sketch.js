@@ -647,3 +647,7 @@ function audioSetup() {
   noiseOscFilter.connect(masterGain);
   synthFilter.connect(masterGain);
 }
+
+function touchStarted() {
+  mousePressed();
+}
