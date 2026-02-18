@@ -113,6 +113,31 @@ let glitchAmt = 0;
 //grain
 let fr = 35
 
+let cnv;
+let dpr = 1;
+
+function isMobileDevice() {
+  return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+// iOS Safari can report weird heights because of the address bar.
+// visualViewport is the most reliable when available.
+function getViewportSize() {
+  const vv = window.visualViewport;
+  const w = Math.floor(vv ? vv.width : window.innerWidth);
+  const h = Math.floor(vv ? vv.height : window.innerHeight);
+  return { w, h };
+}
+
+function startAudioAndHideOverlay() {
+  // start audio (must be user-gesture driven on mobile)
+  if (typeof Tone !== "undefined" && Tone.context && Tone.context.state !== "running") {
+    Tone.start().catch(() => {});
+  }
+
+  const overlay = document.getElementById("overlay");
+  if (overlay) overlay.style.display = "none";
+}
 
 
 
@@ -122,24 +147,37 @@ function preload() {
 }
 
 function setup() {
-  createCanvas(windowWidth, windowHeight, WEBGL);
+  const vp = getViewportSize();
+
+  // Critical on mobile: cap pixel density so WEBGL textures don't explode.
+  // (Doesn't change your shader visuals/logic; it prevents GPU failure.)
+  dpr = isMobileDevice() ? 1 : Math.min(window.devicePixelRatio || 1, 2);
+  pixelDensity(dpr);
+
+  cnv = createCanvas(vp.w, vp.h, WEBGL);
   frameRate(fr);
   noStroke();
 
-  buffer = createGraphics(windowWidth, windowHeight, WEBGL);
+  // Prevent browser gestures/scroll from interrupting touches.
+  cnv.elt.style.touchAction = "none";
+  cnv.elt.style.webkitUserSelect = "none";
+  cnv.elt.style.userSelect = "none";
+
+  buffer = createGraphics(vp.w, vp.h, WEBGL);
+  buffer.pixelDensity(dpr);
   buffer.noStroke();
 
+  // Ensure the first tap anywhere (overlay or canvas) starts audio & hides overlay.
+  document.addEventListener("pointerdown", startAudioAndHideOverlay, { once: true });
 
-  // deterministic randomness
+  // Keep canvas matching the *real* viewport when mobile browser UI changes.
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", windowResized);
+    window.visualViewport.addEventListener("scroll", windowResized);
+  }
+
+  // --- your existing init below unchanged ---
   let r = random([0, 1, 2, 3]);
-  // let seeds = [
-  //   99802705.52943894,
-  //   470272973.6459138,
-  //   151326186.59319073,
-  //   793301208.642165
-  // ];
-  // noiseSeed(seeds[r]);
-  // randomSeed(seeds[r]);
 
   frameMod = 64;
   aksak = 16;
@@ -470,20 +508,29 @@ function draw() {
 }
 
 function windowResized() {
-  // resize the p5 canvas and update the viewport
-  resizeCanvas(windowWidth, windowHeight);
+  const vp = getViewportSize();
+
+  // Keep logical size consistent
+  resizeCanvas(vp.w, vp.h);
+
+  // IMPORTANT: also resize the offscreen WEBGL buffer
+  if (buffer) buffer.resizeCanvas(vp.w, vp.h);
 }
+
 
 function mousePressed() {
-  if (Tone.context.state !== "running") {
-    Tone.start().then(() => console.log("Audio context started!"));
-  }
-
-    let overlay = document.getElementById("overlay");
-    if (overlay) {
-      overlay.style.display = "none";
-    }
+  startAudioAndHideOverlay();
 }
+
+function touchStarted() {
+  startAudioAndHideOverlay();
+  return false; // stop the browser from treating this as scroll/zoom
+}
+
+function touchMoved() {
+  return false; // prevents page scrolling while interacting
+}
+
 
 // audioSetup() unchanged from your last version...
 function audioSetup() {
@@ -648,6 +695,3 @@ function audioSetup() {
   synthFilter.connect(masterGain);
 }
 
-function touchStarted() {
-  mousePressed();
-}
