@@ -99,3 +99,14 @@ canvas {
   transform: scale(1.15);
 }
 
+canvas {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+}
+
+#overlay { z-index: 99999; }
+#menu-button { z-index: 100000; pointer-events: auto; }
+
+/* Helps mobile browsers treat taps as clicks on buttons */
+#menu-button { touch-action: manipulation; }
