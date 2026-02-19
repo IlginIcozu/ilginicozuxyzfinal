@@ -24,6 +24,23 @@
       <span class="menu-dot" aria-hidden="true"></span>
   </button>
 
+  <script>
+  const overlay = document.getElementById("overlay");
+
+  async function startExperience(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    try { await Tone.start(); } catch (err) {}
+    overlay.style.display = "none";
+  }
+
+  // iOS Safari is happiest with touchend / pointerup
+  overlay.addEventListener("touchend", startExperience, { passive: false });
+  overlay.addEventListener("pointerup", startExperience);
+  overlay.addEventListener("click", startExperience);
+</script>
+
+
   <script src="sketch.js">
   </script>
   <script>
