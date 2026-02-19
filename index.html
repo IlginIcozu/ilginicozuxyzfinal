@@ -43,12 +43,25 @@
 
   <script src="sketch.js">
   </script>
-  <script>
-    document.getElementById('menu-button')
-      .addEventListener('click', () => {
-        window.open('https://ilginicozu.com', '_blank');
-      });
-  </script>
+<script>
+  const btn = document.getElementById('menu-button');
+
+  function openMenu(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const url = 'https://ilginicozu.com';
+    const w = window.open(url, '_blank');
+
+    // If the popup is blocked (common on iOS), fall back to same-tab.
+    if (!w) window.location.href = url;
+  }
+
+  btn.addEventListener('touchend', openMenu, { passive: false });
+  btn.addEventListener('pointerup', openMenu);
+  btn.addEventListener('click', openMenu);
+</script>
+
 
 
 </body>
